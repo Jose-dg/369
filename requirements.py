@@ -1,0 +1,13 @@
+django
+django-environ
+djangorestframework
+django-cors-headers
+django-filter
+django-extensions
+psycopg2-binary
+django-redis
+whitenoise
+djangorestframework-simplejwt
+argon2-cffi
+django-multitenant
+requests
