@@ -10,4 +10,4 @@ whitenoise
 djangorestframework-simplejwt
 argon2-cffi
 django-multitenant
-requests
+requestsgunicorn
