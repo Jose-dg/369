@@ -19,7 +19,8 @@ class Event(TenantModelMixin, models.Model):
     idempotency_key = models.CharField(max_length=255, null=True, blank=True, db_index=True)
     dedup_hash = models.CharField(max_length=64, null=True, blank=True, db_index=True)
     attempts = models.PositiveIntegerField(default=0)
-    last_error = models.TextField(null=True, blank=True)
+    error = models.TextField(null=True, blank=True)
+    response = models.JSONField(null=True, blank=True)
     status = models.CharField(max_length=20, choices=STATUS, default='pending', db_index=True)
     trace_id = models.CharField(max_length=64, null=True, blank=True, db_index=True)
 

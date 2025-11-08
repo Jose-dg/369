@@ -1,6 +1,7 @@
 import requests
 import logging
 import json
+from datetime import date
 from .models import AlegraCredential, AlegraInvoice, Company
 from apps.events.models import Event
 
@@ -111,6 +112,9 @@ def create_alegra_invoice(credential: AlegraCredential, event_payload: dict, ale
 
     # --- Get Next Invoice Number ---
     next_invoice_number = _get_next_invoice_number(credential, template_id)
+    
+    # --- Use current date as required by Alegra for electronic invoices ---
+    current_date = date.today().strftime('%Y-%m-%d')
 
     # --- Transform items using the new direct alegra_product_id ---
     items_payload = [
@@ -142,7 +146,7 @@ def create_alegra_invoice(credential: AlegraCredential, event_payload: dict, ale
     payments_payload = [
         {
             "account": {"id": str(_get_bank_id(payment.get('mode_of_payment')))}, # Convert bank_id to string
-            "date": event_payload.get('posting_date'),
+            "date": current_date,
             "amount": payment.get('amount'),
             "paymentMethod": "transfer"  # Use hardcoded 'transfer' as per working example
         }
@@ -156,8 +160,8 @@ def create_alegra_invoice(credential: AlegraCredential, event_payload: dict, ale
             "prefix": template_prefix,
             "number": next_invoice_number
         },
-        "date": event_payload.get('posting_date'),
-        "dueDate": event_payload.get('due_date', event_payload.get('posting_date')),
+        "date": current_date,
+        "dueDate": current_date,
         "client": {"id": int(alegra_contact_id)},
         "items": items_payload,
         "payments": payments_payload,
