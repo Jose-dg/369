@@ -109,6 +109,7 @@ def create_alegra_invoice(credential: AlegraCredential, event_payload: dict, ale
     template_prefix = alegra_config.get("number_template_prefix", "")
     payment_mappings = alegra_config.get("payment_method_mappings", {})
     default_bank_id = alegra_config.get("default_bank_id", 1)
+    electronic_invoicing = alegra_config.get("electronic_invoicing", True)
 
     # --- Get Next Invoice Number ---
     next_invoice_number = _get_next_invoice_number(credential, template_id)
@@ -165,7 +166,7 @@ def create_alegra_invoice(credential: AlegraCredential, event_payload: dict, ale
         "client": {"id": int(alegra_contact_id)},
         "items": items_payload,
         "payments": payments_payload,
-        "stamp": {"generateStamp": True}, 
+        "stamp": {"generateStamp": electronic_invoicing}, 
         "observations": f"Invoice from ERPNext POS: {event_payload.get('name')}",
         "status": "open",
         "paymentForm": "CASH",
