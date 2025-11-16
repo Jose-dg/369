@@ -12,3 +12,5 @@ argon2-cffi
 django-multitenant
 requests
 gunicorn
+celery
+redis

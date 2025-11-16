@@ -53,6 +53,7 @@ INSTALLED_APPS = [
     "apps.interfaces",
     "apps.organizations",
     "apps.companies",
+    "apps.workflows"
 ]
 
 MIDDLEWARE = [
@@ -191,3 +192,7 @@ if DEBUG:
             },
         },
     }
+
+# Celery Configuration
+CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")
+CELERY_RESULT_BACKEND = env("REDIS_URL", default="redis://localhost:6379/0")
