@@ -16,6 +16,19 @@ mkdir -p static
 python manage.py collectstatic --no-input
 
 # Crea el superusuario
-echo "import os; from django.contrib.auth import get_user_model; User = get_user_model(); email = 'admin@mail.com'; password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '9f63B6E14nWjLPtg2fb0O291MnBuWpUhAZ4'); if not User.objects.filter(email=email).exists(): User.objects.create_superuser(email, email, password); print(f'Superuser {email} created.'); else: print(f'Superuser {email} already exists. Skipping creation.');" | python manage.py shell
+cat <<EOF | python manage.py shell
+import os
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+email = 'admin@mail.com'
+password = os.environ.get('DJANGO_SUPERUSER_PASSWORD', '9f63B6E14nWjLPtg2fb0O291MnBuWpUhAZ4')
+
+if not User.objects.filter(email=email).exists():
+    User.objects.create_superuser(email, email, password)
+    print(f'Superuser {email} created.')
+else:
+    print(f'Superuser {email} already exists. Skipping creation.')
+EOF
 
 # Otros comandos de preparación si es necesario...
