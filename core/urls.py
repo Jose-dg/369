@@ -19,9 +19,9 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('apps.interfaces.urls')),
     path('api/integrations/alegra/', include('apps.integrations.alegra.urls')),
     path('api/integrations/erpnext/', include('apps.integrations.erpnext.urls')),
     path('api/workflows/', include('apps.workflows.urls')),
     path('api/events/', include('apps.events.urls')),
+    path('api/', include('apps.interfaces.urls')),
 ]
