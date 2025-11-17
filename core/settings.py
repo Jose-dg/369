@@ -159,6 +159,12 @@ SIMPLE_JWT = {
 # CORS
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOWED_ORIGINS = [env("FRONTEND_URL")]
+CORS_ALLOW_HEADERS = [
+    "content-type",
+    "x-csrftoken",
+    "x-organization-slug",
+    "x-tenant",
+]
 
 if ENVIRONMENT == "local":
     INTERNAL_IPS = ["127.0.0.1", "0.0.0.0", "localhost"]
