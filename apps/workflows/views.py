@@ -50,6 +50,7 @@ class WebhookReceiverView(APIView):
 
 class IntercompanyTransferView(APIView):
     def post(self, request, *args, **kwargs):
+        print("--- [DEBUG] IntercompanyTransferView: POST method reached ---")
         # --- 1. Extract data from request ---
         supplier = request.data.get('supplier')
         source_company_id = request.data.get('source_company_id')

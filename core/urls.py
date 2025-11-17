@@ -17,6 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path, include
 
+print("--- [DEBUG] Loading core/urls.py ---")
+
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/integrations/alegra/', include('apps.integrations.alegra.urls')),
@@ -25,3 +27,5 @@ urlpatterns = [
     path('api/events/', include('apps.events.urls')),
     path('api/', include('apps.interfaces.urls')),
 ]
+
+print(f"--- [DEBUG] core/urls.py urlpatterns: {urlpatterns} ---")
