@@ -31,4 +31,3 @@ else:
     print(f'Superuser {email} already exists. Skipping creation.')
 EOF
 
-# Otros comandos de preparación si es necesario...
