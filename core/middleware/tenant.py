@@ -22,14 +22,11 @@ def _extract_tenant_slug(request: HttpRequest) -> str | None:
 class TenantMiddleware(MiddlewareMixin):
     def process_request(self, request: HttpRequest):
         slug = _extract_tenant_slug(request)
-        print(f"--- [DEBUG] TenantMiddleware: Extracted slug: {slug} ---")
         tenant = None
         if slug:
             try:
                 tenant = Organization.objects.get(slug=slug, is_active=True)
-                print(f"--- [DEBUG] TenantMiddleware: Found tenant: {tenant.slug} ---")
             except Organization.DoesNotExist:
-                print(f"--- [DEBUG] TenantMiddleware: Tenant with slug '{slug}' not found. ---")
                 tenant = None
 
         # Fija el tenant actual para django-multitenant (thread-local)
