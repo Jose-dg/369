@@ -32,7 +32,7 @@ class ErpNextPosInvoiceWebhookView(APIView):
             )
 
         payload = request.data
-        print('JSON desde ERPNext', payload)
+        logger.info(f"JSON received from Shopify: {payload}")
         organization = request.organization
 
         try:

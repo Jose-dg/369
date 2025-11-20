@@ -11,7 +11,8 @@ from apps.workflows.services import ERPNextClient
 
 logger = logging.getLogger(__name__)
 
-def _transform_shopify_to_erpnext(shopify_payload, erpnext_customer_name, erpnext_company_name, default_warehouse):
+import json
+def _transform_shopify_to_erpnext(shopify_payload, erpnext_customer_name, erpnext_company_name, source_warehouse, default_payment_mode):
     """
     Transforms a Shopify order payload into an ERPNext Sales Invoice dictionary.
     """
@@ -32,13 +33,16 @@ def _transform_shopify_to_erpnext(shopify_payload, erpnext_customer_name, erpnex
             "qty": qty,
             "rate": rate,
             "amount": qty * rate,
-            "warehouse": default_warehouse,
+            "warehouse": source_warehouse,
         })
 
     if not items:
+        logger.error(f"No valid line items with SKUs found. Payload: {json.dumps(shopify_payload)}")
         raise ValueError("No valid line items with SKUs found in Shopify order")
 
-    return {
+    total_amount = sum(item['amount'] for item in items)
+
+    doc = {
         "customer": erpnext_customer_name,
         "company": erpnext_company_name,
         "posting_date": date.today().isoformat(),
@@ -49,6 +53,16 @@ def _transform_shopify_to_erpnext(shopify_payload, erpnext_customer_name, erpnex
         "is_pos": 1,
         "currency": shopify_payload.get('currency', 'USD'),
     }
+
+    if default_payment_mode:
+        doc["payments"] = [
+            {
+                "mode_of_payment": default_payment_mode,
+                "amount": total_amount
+            }
+        ]
+    
+    return doc
 
 
 def _transform_shopify_to_erpnext_customer(shopify_customer_data):
@@ -106,13 +120,31 @@ def create_erpnext_order_from_shopify_event(self, event_id):
         # Retrieve ERPNext credentials from ErpnextCredential model
         erp_creds = ErpnextCredential.objects.get(organization=event.organization, is_active=True)
 
-        # Retrieve ERPNext config from company metadata
-        erpnext_config = company.metadata.get('erpnext_config', {})
-        erpnext_company_name = erpnext_config.get('company_name')
-        default_warehouse = erpnext_config.get('default_warehouse')
+        # Retrieve ERPNext config from company metadata, handling potential nesting
+        erpnext_config = company.metadata.get('erpnext_config')
+        if not erpnext_config and isinstance(company.metadata.get('metadata'), dict):
+            erpnext_config = company.metadata.get('metadata').get('erpnext_config')
+        erpnext_config = erpnext_config or {}  # Default to an empty dict if still not found
 
-        if not all([erp_creds.erpnext_site_url, erp_creds.api_key, erp_creds.api_secret, erpnext_company_name, default_warehouse]):
-            raise ValueError(f"ERPNext credentials (site_url, api_key, api_secret) or config (company_name, default_warehouse) not fully configured for Company {company.id}")
+        # Get source_warehouse from the config
+        source_warehouse = erpnext_config.get('source_warehouse')
+
+        # Get default_payment_mode from the config
+        default_payment_mode = erpnext_config.get('default_payment_mode')
+
+        # Get the company name for ERPNext from the Company model's name field
+        erpnext_company_name = company.name
+
+        missing_config = []
+        if not erp_creds.erpnext_site_url: missing_config.append('erpnext_site_url')
+        if not erp_creds.api_key: missing_config.append('api_key')
+        if not erp_creds.api_secret: missing_config.append('api_secret')
+        if not erpnext_company_name: missing_config.append('company_name (Company model)')
+        if not source_warehouse: missing_config.append('source_warehouse (metadata)')
+        if not default_payment_mode: missing_config.append('default_payment_mode (metadata)')
+
+        if missing_config:
+            raise ValueError(f"Missing ERPNext configuration for Company {company.id}: {', '.join(missing_config)}")
 
         erp_client = ERPNextClient(
             api_url=erp_creds.erpnext_site_url,
@@ -142,11 +174,20 @@ def create_erpnext_order_from_shopify_event(self, event_id):
             event.payload,
             erpnext_customer_name_for_invoice,
             erpnext_company_name,
-            default_warehouse
+            source_warehouse,
+            default_payment_mode
         )
         
         logger.info(f"Creating Sales Invoice in ERPNext for Shopify order: {event.payload.get('name')}")
         erpnext_response = erp_client.create_document("Sales Invoice", invoice_data)
+        
+        # Extract the name of the created invoice to submit it
+        invoice_name = erpnext_response.get('data', {}).get('name')
+        if not invoice_name:
+            raise ValueError("ERPNext did not return a name for the created Sales Invoice.")
+        
+        logger.info(f"Submitting Sales Invoice {invoice_name} in ERPNext.")
+        erp_client.submit_document("Sales Invoice", invoice_name)
         
         event.status = 'success'
         event.response = erpnext_response
