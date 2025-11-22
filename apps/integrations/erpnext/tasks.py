@@ -73,11 +73,14 @@ def _transform_shopify_to_erpnext_customer(shopify_customer_data):
     if not shopify_customer_data or not shopify_customer_data.get('email'):
         raise ValueError("Shopify customer data is missing or does not contain an email.")
 
+    country_code = shopify_customer_data.get('default_address', {}).get('country_code')
+
     return {
         "customer_name": f"{shopify_customer_data.get('first_name', '')} {shopify_customer_data.get('last_name', '')}".strip(),
         "customer_group": "Individual",
         "customer_type": "Individual",
         "email_id": shopify_customer_data['email'],
+        "custom_country": country_code or "CO", # Default to CO if not found, or handle as needed
     }
 
 
