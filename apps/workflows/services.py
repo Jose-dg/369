@@ -52,7 +52,7 @@ class ERPNextClient:
         Retrieves a customer from ERPNext by email.
         """
         params = {
-            'filters': json.dumps([["email_id","=","", customer_email]])
+            'filters': json.dumps([["email_id", "=", customer_email]])
         }
         # ERPNext GET request for a list of documents uses /api/resource/{doctype}
         # with filters in params.

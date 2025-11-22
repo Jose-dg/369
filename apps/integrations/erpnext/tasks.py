@@ -52,6 +52,7 @@ def _transform_shopify_to_erpnext(shopify_payload, erpnext_customer_name, erpnex
         "update_stock": 1,
         "is_pos": 1,
         "currency": shopify_payload.get('currency', 'USD'),
+        "set_warehouse": source_warehouse,
     }
 
     if default_payment_mode:
