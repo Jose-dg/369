@@ -50,6 +50,7 @@ INSTALLED_APPS = [
     "apps.integrations.alegra",
     "apps.integrations.erpnext",
     "apps.integrations.shopify",
+    "apps.integrations.router",
     "apps.interfaces",
     "apps.organizations",
     "apps.companies",
@@ -202,3 +203,7 @@ if DEBUG:
 # Celery Configuration
 CELERY_BROKER_URL = env("REDIS_URL", default="redis://localhost:6379/0")
 CELERY_RESULT_BACKEND = env("REDIS_URL", default="redis://localhost:6379/0")
+
+# Core Backend Integration
+CORE_BACKEND_URL = env("CORE_BACKEND_URL", default="http://localhost:8000")
+CORE_BACKEND_API_KEY = env("CORE_BACKEND_API_KEY", default="")
