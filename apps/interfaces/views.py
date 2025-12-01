@@ -164,3 +164,46 @@ class ShopifyOrderWebhookView(APIView):
             {'message': 'Webhook accepted for processing'},
             status=status.HTTP_202_ACCEPTED
         )
+
+
+class ManualOrderCreateProxyView(APIView):
+    """
+    Proxies manual order creation requests to the Core Backend.
+    """
+    def post(self, request, *args, **kwargs):
+        import requests
+        from django.conf import settings
+
+        core_url = settings.CORE_BACKEND_URL
+        api_key = settings.CORE_BACKEND_API_KEY
+        
+        # Construct the target URL
+        # Assuming the backend endpoint is exactly as provided in the prompt: manual/order/create/
+        target_url = f"{core_url}/manual/order/create/"
+        
+        headers = {
+            'Content-Type': 'application/json',
+        }
+        if api_key:
+            headers['Authorization'] = f"Api-Key {api_key}"
+
+        try:
+            response = requests.post(
+                target_url,
+                json=request.data,
+                headers=headers,
+                timeout=30
+            )
+            
+            # Return the response from the backend exactly as is
+            return Response(
+                response.json(),
+                status=response.status_code
+            )
+            
+        except requests.RequestException as e:
+            logger.error(f"Failed to proxy manual order to Core Backend: {e}")
+            return Response(
+                {'error': 'Failed to communicate with backend service.'},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE
+            )
