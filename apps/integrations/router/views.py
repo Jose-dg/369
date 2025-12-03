@@ -29,8 +29,8 @@ class RegisterUniqueCodesView(APIView):
         print("="*60 + "\n")
         
         # Optional: Inject current user ID if not provided and user is authenticated
-        # if request.user.is_authenticated and 'registered_by' not in data:
-        #     data['registered_by'] = request.user.id
+        if request.user.is_authenticated and 'registered_by' not in data:
+            data['registered_by'] = request.user.id
             
         service = CoreBackendService()
         
@@ -64,9 +64,9 @@ class RegisterUniqueCodesView(APIView):
             for code in data['codes']:
                 if isinstance(code, dict) and 'cost' in code:
                     try:
-                        # Convert to float first to handle any input type, then format to fixed 2 decimal string
+                        # Convert to float first to handle any input type, then format to fixed 2 decimal float
                         val = float(code['cost'])
-                        code['cost'] = "{:.2f}".format(val)
+                        code['cost'] = round(val, 2)
                     except (ValueError, TypeError):
                         pass
 
@@ -76,6 +76,6 @@ class RegisterUniqueCodesView(APIView):
                 if isinstance(product, dict) and 'cost' in product:
                     try:
                         val = float(product['cost'])
-                        product['cost'] = "{:.2f}".format(val)
+                        product['cost'] = round(val, 2)
                     except (ValueError, TypeError):
                         pass

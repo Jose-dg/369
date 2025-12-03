@@ -165,45 +165,71 @@ class ShopifyOrderWebhookView(APIView):
             status=status.HTTP_202_ACCEPTED
         )
 
-
-class ManualOrderCreateProxyView(APIView):
+class OrderCreateProxyView(APIView):
     """
-    Proxies manual order creation requests to the Core Backend.
+    Proxies order creation requests to the Core Integration.
     """
     def post(self, request, *args, **kwargs):
-        import requests
-        from django.conf import settings
+        """
+        Receives a order creation request, validates it, and creates an event.
+        """
+        payload = request.data
+        print("payload: ", payload)
+        
+        # Basic validation to ensure payload is not empty
+        if not payload:
+             return Response(
+                {'error': 'Empty payload'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        core_url = settings.CORE_BACKEND_URL
-        api_key = settings.CORE_BACKEND_API_KEY
+        # Try to determine the organization from multiple sources
+        organization = getattr(request, 'organization', None)
         
-        # Construct the target URL
-        # Assuming the backend endpoint is exactly as provided in the prompt: manual/order/create/
-        target_url = f"{core_url}/manual/order/create/"
+        # Try from authenticated user
+        if not organization and request.user.is_authenticated:
+             if hasattr(request.user, 'organization'):
+                 organization = request.user.organization
         
-        headers = {
-            'Content-Type': 'application/json',
-        }
-        if api_key:
-            headers['Authorization'] = f"Api-Key {api_key}"
+        # Try from store_id in payload (for webhook/frontend requests)
+        if not organization:
+            store_id = payload.get('store_id')
+            if store_id:
+                try:
+                    company = Company.objects.select_related('organization').get(id=store_id)
+                    organization = company.organization
+                    logger.info(f"Organization found via store_id: {store_id} -> {organization.slug}")
+                except Company.DoesNotExist:
+                    logger.warning(f"Company with store_id {store_id} not found")
+                    return Response(
+                        {"error": f"Store with id {store_id} not found"},
+                        status=status.HTTP_404_NOT_FOUND
+                    )
+        
+        # Final check - organization is required
+        if not organization:
+             return Response(
+                {"error": "Organization context required. Please provide store_id in payload or authenticate."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
         try:
-            response = requests.post(
-                target_url,
-                json=request.data,
-                headers=headers,
-                timeout=30
+            event = Event.objects.create(
+                organization=organization,
+                source='proxy', # Generic source
+                topic='order.create', # Generic topic
+                payload=payload
+            )
+            # Note: The signal will automatically trigger process_order_event.delay()
+
+            return Response(
+                {'message': 'Request accepted for processing', 'event_id': str(event.id)},
+                status=status.HTTP_202_ACCEPTED
             )
             
-            # Return the response from the backend exactly as is
+        except Exception as e:
+            logger.error(f"Failed to create event for order: {e}", exc_info=True)
             return Response(
-                response.json(),
-                status=response.status_code
-            )
-            
-        except requests.RequestException as e:
-            logger.error(f"Failed to proxy manual order to Core Backend: {e}")
-            return Response(
-                {'error': 'Failed to communicate with backend service.'},
-                status=status.HTTP_503_SERVICE_UNAVAILABLE
+                {'error': 'Failed to process request.'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
